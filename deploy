@@ -12,6 +12,7 @@ PROJECT=$1
 # Enable Cloud Functions and Resource Manager
 gcloud services enable cloudresourcemanager.googleapis.com --project=$PROJECT
 gcloud services enable cloudfunctions.googleapis.com --project=$PROJECT
+gcloud services enable cloudbilling.googleapis.com --project=$PROJECT
 
 # Deploy the function
 gcloud functions deploy capBudget --gen2 --entry-point=on_budget_reached --runtime=python311 --region=us-central1 --project=$PROJECT --trigger-topic=budgetreached
