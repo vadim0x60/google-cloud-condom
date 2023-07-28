@@ -1,11 +1,13 @@
 # Google Cloud Condom
 
-The cost of raising a child ranges from $233,610 to $284,570 for middle-income families in the United States. And [you get a child!](https://www.goodreads.com/book/show/10266902-selfish-reasons-to-have-more-kids). The same amount of money I would spend if I accidentally left my [innocent-seeming experiment](https://www.reddit.com/r/googlecloud/comments/14a3epc/post_mortem_how_i_was_charged_4000_eur_for/) with Google Cloud running for 2-3 weeks. [And what are the universities thinking? They go out of their way to ensure their students are well supplied with contraceptives, and yet they're hosting cloud tutorials and giving out student cloud credits left and right.](https://youtu.be/ii1jcLg-eIQ?t=988).
+The cost of raising a child ranges from $233,610 to $284,570 for middle-income families in the United States. And [you get a child!](https://www.goodreads.com/book/show/10266902-selfish-reasons-to-have-more-kids). The same amount of money I would spend if I accidentally left my [innocent-seeming experiment](https://www.reddit.com/r/googlecloud/comments/14a3epc/post_mortem_how_i_was_charged_4000_eur_for/) with Google Cloud running for 2-3 weeks. [And what are the universities thinking? They go out of their way to ensure their students are well supplied with contraceptives, and yet they're hosting cloud tutorials and giving out student cloud credits left and right.](https://youtu.be/ii1jcLg-eIQ?t=988)
 
 I am here with a solution. Google Cloud Condom is a Google Cloud Function that will automatically shut down your project(s) when you reach your budget limit and prevent further spending. 
 
 *Warning 1*. Condom shuts down your projects by disabling their billing. This can and almost certainly *will lead to irreversible data loss*. Condom is meant for people who prefer irreversible data loss to irreversible financial loss. Condom only gets activated when 100% of your budget is reached and it is possible to set up budget alerts for 50%, 75% or any other percentage of the budget. It is recommended that you set up an alert for 30% or even lower so that you can get an alert and pull out gracefully.
+
 *Warning 2* Google's budget alerts can arrive with a delay. Condom caps your spending at 100% of the budget + spending that occured during the alert delay. No protection is perfect.
+
 *Warning 3* If you set up a budget for a particular project or set of projects and that budget is reached, the current version of Condom will still shut down all projects in your billing account. We are working on this. At the meantime, just don't connect project-specific budgets to Condom's pub/sub topic (see below)
 
 ## Installation
