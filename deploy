@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# Check if correct number of arguments are passed
+if [ "$#" -ne 1 ]; then
+    echo "Usage: ./deploy PROJECT_ID"
+    exit 1
+fi
+
+# Assign command line arguments to variables
+PROJECT=$1
+
+# Enable Cloud Functions and Resource Manager
+gcloud services enable cloudresourcemanager.googleapis.com --project=$PROJECT
+gcloud services enable cloudfunctions.googleapis.com --project=$PROJECT
+
+# Deploy the function
+gcloud functions deploy capBudget --gen2 --entry-point=on_budget_reached --runtime=python311 --region=us-central1 --project=$PROJECT --trigger-topic=budgetreached
+
+# Get the service account email
+SERVICE_ACCOUNT_EMAIL=$(gcloud functions describe capBudget --project=$PROJECT --format='value(serviceConfig.serviceAccountEmail)')
+
+# List active billing accounts
+BILLING_ACCOUNTS=$(gcloud beta billing accounts list --filter="OPEN=true" --format="value(ACCOUNT_ID)")
+
+# Add IAM policy binding for each active billing account
+for BILLING_ACCOUNT in $BILLING_ACCOUNTS
+do
+  gcloud beta billing accounts add-iam-policy-binding $BILLING_ACCOUNT --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" --role="roles/billing.admin"
+done
