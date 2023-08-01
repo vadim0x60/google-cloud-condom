@@ -30,10 +30,19 @@ def disable_billing_for_project(project_name):
     )
 
 @logwrap
-def defuse_billing_account(billing_account_name, except_project=None):
+def defuse_billing_account(billing_account_name, protected_projects=[]):
     for project in list_associated_projects(billing_account_name):
-        if except_project and project.name == except_project:
-          # Suicide is always counterproductive
+        if project.name in protected_projects:
           continue
 
         disable_billing_for_project(project.name)
+
+@logwrap
+def on_budget_reached(event, protected_projects=[]):
+    billing_account_id = event["billingAccountId"]
+    billing_account_name = f"billingAccounts/{billing_account_id}"
+    spent = float(event["costAmount"])
+    limit = float(event["budgetAmount"])
+
+    if spent >= limit:
+      defuse_billing_account(billing_account_name, protected_projects)
