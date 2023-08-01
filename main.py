@@ -8,7 +8,8 @@ import condom
 logging.basicConfig(level=logging.DEBUG)
 
 project_id_endpoint = "http://metadata.google.internal/computeMetadata/v1/project/project-id"
-this_project_name = "projects/{}".format(requests.get(project_id_endpoint, headers={"Metadata-Flavor": "Google"}))
+r = requests.get(project_id_endpoint, headers={"Metadata-Flavor": "Google"})
+this_project_name = "projects/{}".format(r.text)
 
 @functions_framework.cloud_event
 def on_budget_reached(cloud_event):
