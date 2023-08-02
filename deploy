@@ -20,11 +20,16 @@ gcloud functions deploy capBudget --gen2 --entry-point=on_budget_reached --runti
 # Get the service account email
 SERVICE_ACCOUNT_EMAIL=$(gcloud functions describe capBudget --project=$PROJECT --format='value(serviceConfig.serviceAccountEmail)')
 
-# List active billing accounts
-BILLING_ACCOUNTS=$(gcloud beta billing accounts list --filter="OPEN=true" --format="value(ACCOUNT_ID)")
+# Add permission to list projects
+for PROJECT_ID in $(gcloud projects list --format="value(projectId)")
+do
+  gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
+    --role="roles/viewer"
+done
 
-# Add IAM policy binding for each active billing account
-for BILLING_ACCOUNT in $BILLING_ACCOUNTS
+# Add permission to disable billing
+for BILLING_ACCOUNT in $(gcloud beta billing accounts list --filter="OPEN=true" --format="value(ACCOUNT_ID)")
 do
   gcloud beta billing accounts add-iam-policy-binding $BILLING_ACCOUNT --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" --role="roles/billing.admin"
 done
