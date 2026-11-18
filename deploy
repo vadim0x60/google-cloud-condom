@@ -1,35 +1,46 @@
 #!/bin/bash
+set -euo pipefail
 
-# Check if correct number of arguments are passed
 if [ "$#" -ne 1 ]; then
-    echo "Usage: ./deploy PROJECT_ID"
+    echo "Usage: [DRY_RUN=1] [REGION=us-central1] ./deploy PROJECT_ID"
     exit 1
 fi
 
-# Assign command line arguments to variables
 PROJECT=$1
+REGION=${REGION:-us-central1}
+FUNCTION=capBudget
 
-# Enable Cloud Functions and Resource Manager
-gcloud services enable cloudresourcemanager.googleapis.com --project=$PROJECT
-gcloud services enable cloudfunctions.googleapis.com --project=$PROJECT
-gcloud services enable cloudbilling.googleapis.com --project=$PROJECT
+# Enable the APIs Condom calls and the ones 2nd gen Cloud Functions are built on
+gcloud services enable \
+    cloudbilling.googleapis.com \
+    billingbudgets.googleapis.com \
+    cloudresourcemanager.googleapis.com \
+    cloudfunctions.googleapis.com \
+    cloudbuild.googleapis.com \
+    artifactregistry.googleapis.com \
+    run.googleapis.com \
+    eventarc.googleapis.com \
+    pubsub.googleapis.com \
+    --project="$PROJECT"
 
-# Deploy the function
-gcloud functions deploy capBudget --gen2 --entry-point=on_budget_reached --runtime=python311 --region=us-central1 --project=$PROJECT --trigger-topic=budgetreached
+# Deploy the function. --retry makes Pub/Sub redeliver the notification if a shutdown fails.
+gcloud functions deploy "$FUNCTION" --gen2 --entry-point=on_budget_reached --runtime=python311 \
+    --region="$REGION" --project="$PROJECT" --trigger-topic=budgetreached --retry \
+    --set-env-vars="GOOGLE_CLOUD_PROJECT=$PROJECT,DRY_RUN=${DRY_RUN:-0}"
 
-# Get the service account email
-SERVICE_ACCOUNT_EMAIL=$(gcloud functions describe capBudget --project=$PROJECT --format='value(serviceConfig.serviceAccountEmail)')
+SERVICE_ACCOUNT_EMAIL=$(gcloud functions describe "$FUNCTION" --gen2 --region="$REGION" --project="$PROJECT" \
+    --format='value(serviceConfig.serviceAccountEmail)')
 
-# Add permission to list projects
-for PROJECT_ID in $(gcloud projects list --format="value(projectId)")
-do
-  gcloud projects add-iam-policy-binding $PROJECT_ID \
-    --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" \
-    --role="roles/viewer"
+# Billing Account Administrator lets Condom list and unlink every project on the account,
+# including projects created after this deployment.
+for BILLING_ACCOUNT in $(gcloud billing accounts list --filter=open=true --format="value(name.basename())"); do
+    gcloud billing accounts add-iam-policy-binding "$BILLING_ACCOUNT" \
+        --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" --role="roles/billing.admin"
 done
 
-# Add permission to disable billing
-for BILLING_ACCOUNT in $(gcloud beta billing accounts list --filter="OPEN=true" --format="value(ACCOUNT_ID)")
-do
-  gcloud beta billing accounts add-iam-policy-binding $BILLING_ACCOUNT --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" --role="roles/billing.admin"
+# Browser lets Condom translate the project numbers in project-scoped budgets into project IDs.
+# Projects created later lack it; a project-scoped budget covering them shuts down the whole account.
+for PROJECT_ID in $(gcloud projects list --format="value(projectId)"); do
+    gcloud projects add-iam-policy-binding "$PROJECT_ID" \
+        --member="serviceAccount:$SERVICE_ACCOUNT_EMAIL" --role="roles/browser" --condition=None >/dev/null
 done

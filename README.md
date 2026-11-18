@@ -8,7 +8,9 @@ I am here with a solution. Google Cloud Condom is a Google Cloud Function that w
 
 *Warning 2* Google's budget alerts can arrive with a delay. Condom caps your spending at 100% of the budget + spending that occured during the alert delay. No protection is perfect.
 
-*Warning 3* If you set up a budget for a particular project or set of projects and that budget is reached, the current version of Condom will still shut down all projects in your billing account. We are working on this. At the meantime, just don't connect project-specific budgets to Condom's pub/sub topic (see below)
+*Warning 3* If a budget is limited to specific projects, Condom only shuts down those projects. A budget that covers the whole billing account, or one Condom can't resolve to a list of projects (for example a budget limited to folders or organizations), shuts down every project on the billing account. Condom never shuts down the project it runs in.
+
+*Warning 4* Google can't unlink a project whose [billing link is locked](https://cloud.google.com/billing/docs/how-to/secure-project-billing-account-link), so Condom can't shut such projects down. It keeps retrying and logs an error for them.
 
 ## Installation
 
@@ -24,5 +26,16 @@ I am here with a solution. Google Cloud Condom is a Google Cloud Function that w
 ```
 
 7. Enjoy your time with Google Cloud.
+
+To try Condom without risk, deploy it with `DRY_RUN=1 ./deploy PROJECT_ID`. It then only logs which projects it would shut down. Run `./deploy PROJECT_ID` again to arm it. Set `REGION` to deploy outside `us-central1`.
+
+## Development
+
+```
+pip install -r requirements-dev.txt
+pytest
+```
+
+The tests run the function against an in-memory model of Cloud Billing, so they need no Google Cloud account.
 
 *Note* It is allowed and intended to have many budgets connected to the same topic. When a budget is reached, a message is published on the topic with all the details of that budget. Condom will evaluate the blast radius of projects linked to that particular budget and shut them down. You only need to do one deployment per topic and the intended use case is having one Condom for all of you billing accounts.
