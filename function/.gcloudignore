@@ -1,0 +1,3 @@
+# Files in function/ that gcloud functions deploy does not upload
+.gcloudignore
+__pycache__/

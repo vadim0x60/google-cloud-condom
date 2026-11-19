@@ -1,2 +1,3 @@
--r requirements.txt
+-r function/requirements.txt
 pytest~=8.0
+cel-python~=0.5

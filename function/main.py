@@ -7,7 +7,7 @@ import os
 import functions_framework
 import requests
 
-import condom
+import kill_switch
 
 logging.basicConfig(level=logging.INFO)
 
@@ -34,4 +34,4 @@ def on_budget_reached(cloud_event):
     protected_projects = {this_project_id()}
     dry_run = os.environ.get("DRY_RUN", "").lower() in ("1", "true", "yes")
 
-    condom.on_budget_reached({**attrs, **data}, protected_projects, dry_run)
+    kill_switch.on_budget_reached({**attrs, **data}, protected_projects, dry_run)
